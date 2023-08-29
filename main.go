@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/mudo-tech/create-pdf-document/dto"
 	pdfcpu "github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/primitives"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -16,10 +18,48 @@ func main() {
 
 	err := pdfcpu.InstallFonts([]string{"./resources/CONSOLA.ttf"})
 	if err != nil {
-		log.Println("1", err)
+		log.Println(err)
 		return
 	}
 
+	content := populatePDFData(dto.NotaBody{
+		NotaBranchDetail: dto.NotaBranchDetail{
+			Address: "6, Jl. H. Shibi No.14, RT.6/RW.1, Srengseng Sawah, Kec. Jagakarsa, Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 10550",
+		},
+	})
+
+	payloadBytes, err := json.Marshal(content)
+	op := "utils.http.ReadRequest:"
+	if err != nil {
+		log.Println(op, err)
+		return
+	}
+	f0 := bytes.NewBuffer(payloadBytes)
+
+	var f2 *os.File
+	outFilePDF := "./example-pdf.pdf"
+	f2, err = os.Create(outFilePDF)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	defer func() {
+		if err = f2.Close(); err != nil {
+			log.Println(err)
+			return
+		}
+		return
+	}()
+
+	err = pdfcpu.Create(nil, f0, f2, pdfcpu.LoadConfiguration())
+	if err != nil {
+		log.Println(err)
+		return
+	}
+}
+
+func populatePDFData(body dto.NotaBody) primitives.PDF {
 	fontConsola := &primitives.FormFont{
 		Name: "Consolas",
 		Size: 4,
@@ -29,9 +69,12 @@ func main() {
 		Width: 1,
 		Color: "#FFFFFF",
 	}
-
-	content := primitives.PDF{
-		Paper:           "A8",
+	logoHeight := 30
+	padding := 4
+	fontSize := 4
+	return primitives.PDF{
+		Paper: "A8",
+		// Paper size is W X H = 125 X 184
 		Crop:            "10",
 		Origin:          "upperLeft",
 		ContentBox:      false,
@@ -43,8 +86,8 @@ func main() {
 				Content: &primitives.Content{
 					ImageBoxes: []*primitives.ImageBox{
 						{
-							Src:    "https://res.cloudinary.com/dukuh51km/image/upload/v1691834622/staging/mobxL-1691834622.png",
-							Height: 30,
+							Src:    body.NotaBranchDetail.ImageUrl,
+							Height: float64(logoHeight),
 							Anchor: "tc",
 							Dy:     2,
 						},
@@ -53,23 +96,23 @@ func main() {
 						{
 							Font:      fontConsola,
 							Alignment: "center",
-							Value:     "Jalan kedoya 2 Jakarta Selatan, DKI Jakarta Indonesia\nEmail ke kassirbersih@gmail.com, Wa Ke +082186266734.",
+							Value:     parseText(body.NotaBranchDetail.Address),
 							Anchor:    "tc",
-							Dy:        34,
+							Dy:        float64(logoHeight + padding),
 						},
 						{
 							Font:      fontConsola,
 							Alignment: "center",
 							Value:     "--------------------------------------------------------",
 							Anchor:    "tc",
-							Dy:        43,
+							Dy:        float64(logoHeight + (fontSize * 2) + padding),
 						},
 						{
 							Font:      fontConsola,
-							Alignment: "center",
+							Alignment: "left",
 							Value:     "Tagihan Untuk Layanan:",
-							Anchor:    "tc",
-							Dy:        48,
+							Anchor:    "tl",
+							Dy:        float64(logoHeight + (fontSize * 3) + (padding * 2)),
 							Dx:        3,
 						},
 					},
@@ -140,34 +183,30 @@ func main() {
 			},
 		},
 	}
+}
 
-	payloadBytes, err := json.Marshal(content)
-	op := "utils.http.ReadRequest:"
-	if err != nil {
-		log.Println(op, err)
-		return
+func parseText(tx string) string {
+	r := strings.NewReplacer("\n", "", "  ", "")
+	tx = r.Replace(tx)
+	segments := len(tx) / 56
+	if segments*56 < len(tx) {
+		segments += 1
 	}
-	f0 := bytes.NewBuffer(payloadBytes)
-
-	var f2 *os.File
-	outFilePDF := "./example-pdf.pdf"
-	f2, err = os.Create(outFilePDF)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer func() {
-		if err = f2.Close(); err != nil {
-			log.Println(err)
-			return
+	start := 0
+	end := 56
+	var strs []string
+	for i := 0; i < segments && end < len(tx); i++ {
+		for i := end; i > 0; i-- {
+			if string(tx[i]) == " " {
+				end = i
+				break
+			}
 		}
-		return
-	}()
-
-	err = pdfcpu.Create(nil, f0, f2, pdfcpu.LoadConfiguration())
-	if err != nil {
-		log.Println(err)
-		return
+		strs = append(strs, tx[start:end])
+		start = end
+		end += 56
 	}
+	strs = append(strs, tx[start:])
+
+	return strings.Join(strs, "\n")
 }
