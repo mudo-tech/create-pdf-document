@@ -3,45 +3,46 @@ package dto
 type NotaBody struct {
 	TransactionID     uint                  `json:"transactionId"`
 	NotaBranchDetail  NotaBranchDetail      `json:"notaBranchDetail"`
+	TransactionDetail NotaTransactionDetail `pdfField:"type:tablePivot;tableRowHeight:6;dy:-20" json:"transactionDetail"`
 	ServiceDetail     NotaServiceDetail     `json:"service"`
-	TransactionDetail NotaTransactionDetail `json:"transactionDetail"`
 	Payment           NotaPayment           `json:"payment"`
 }
 
 type NotaBranchDetail struct {
-	ImageUrl string `pdfField:"type:Textfield;page:1;name:ImageUrl" json:"ImageUrl"`
-	Name     string `pdfField:"type:Textfield;page:1;name:name" json:"name"`
-	Address  string `pdfField:"type:Textfield;page:1;name:address" json:"address"`
-	Phone    string `pdfField:"type:Textfield;page:1;name:phone" json:"phone"`
+	ImageUrl string `pdfField:"type:image;imageHeight:15" json:"ImageUrl"`
+	Name     string `pdfField:"type:text" json:"name"`
+	Address  string `pdfField:"type:text" json:"address"`
+	Phone    string `pdfField:"type:text" json:"phone"`
+	Divider  string `pdfField:"type:text" json:"-"`
 }
 
 type NotaServiceDetail struct {
-	TotalPrice uint          `pdfField:"type:Textfield;page:1;name:totalPrice"  json:"totalPrice"`
+	TotalPrice uint          `pdfField:"type:text;name:totalPrice"  json:"totalPrice"`
 	Services   []NotaService `json:"services"`
 }
 
 type NotaService struct {
-	Name       string `pdfField:"type:Textfield;page:1;name:ServiceName" json:"name"`
-	Quantity   uint   `pdfField:"type:Textfield;page:1;name:ServiceQuantity" json:"quantity"`
+	Name       string `json:"name"`
+	Quantity   uint   `json:"quantity"`
 	UnitAmount string `json:"unitAmount"`
-	Units      string `pdfField:"type:Textfield;page:1;name:ServiceUnit" json:"units"`
-	Price      uint   `pdfField:"type:Textfield;page:1;name:ServicePrice" json:"price"`
+	Units      string `json:"units"`
+	Price      uint   `json:"price"`
 }
 
 type NotaPayment struct {
-	Status string `pdfField:"type:Textfield;page:1;name:paymentStatus" json:"status"`
-	Method string `pdfField:"type:Textfield;page:1;name:paymentMethod" json:"method"`
-	PaidAt string `pdfField:"type:Textfield;page:1;name:paymentPaidAt" json:"paidAt"`
-	Paid   uint   `pdfField:"type:Textfield;page:1;name:paymentPaidAmount" json:"paid"`
-	Remain uint   `pdfField:"type:Textfield;page:1;name:paymentRemain" json:"remain"`
+	Status string `json:"status"`
+	Method string `json:"method"`
+	PaidAt string `json:"paidAt"`
+	Paid   uint   `json:"paid"`
+	Remain uint   `json:"remain"`
 }
 
 type NotaTransactionDetail struct {
-	ReferenceNumber string `pdfField:"type:Textfield;page:1;name:referenceNumber" json:"referenceNumber"`
+	ReferenceNumber string `pdfField:"colName:ID Referensi" json:"referenceNumber"`
 	NotaPdf         string `json:"notaFile"`
 	NotaWa          string `json:"whatsappCTA"`
-	Name            string `pdfField:"type:Textfield;page:1;name:custName"  json:"name"`
-	Phone           string `pdfField:"type:Textfield;page:1;name:custPhone"  json:"phone"`
-	StartedAt       string `pdfField:"type:Textfield;page:1;name:startedAt" json:"startedAt"`
-	FinsihedAt      string `pdfField:"type:Textfield;page:1;name:finishedAt" json:"finishedAt"`
+	Name            string `pdfField:"colName:Nama Pelanggan" json:"name"`
+	Phone           string `pdfField:"colName:Nomor Wa" json:"phone"`
+	StartedAt       string `pdfField:"colName:Dimulai dari" json:"startedAt"`
+	FinsihedAt      string `pdfField:"colName:Estimasi" json:"finishedAt"`
 }
