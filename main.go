@@ -277,15 +277,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 		}
 		var rows = make([][]string, 0)
 		for i := 0; i < pType.NumField(); i++ {
-			var fieldName string
-			for _, s := range strings.Split(pType.Field(i).Tag.Get("pdfField"), ";") {
-				re := regexp.MustCompile(`colName:(.+?);`)
-				match := re.FindStringSubmatch(s + ";")
-				if len(match) > 0 {
-					fieldName = match[1]
-					break
-				}
-			}
+			fieldName := cp.getTableColName(pType, i)
 			if fieldName == "" {
 				continue
 			}
@@ -381,6 +373,22 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 
 	cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)].Content = comp
 	return nil
+}
+
+func (cp *CreatePDF) getTableColName(pType reflect.Type, i int) string {
+	var fieldName string
+	for _, s := range strings.Split(pType.Field(i).Tag.Get("pdfField"), ";") {
+		if s == "" {
+			return ""
+		}
+		re := regexp.MustCompile(`colName:(.+?);`)
+		match := re.FindStringSubmatch(s + ";")
+		if len(match) > 0 {
+			fieldName = match[1]
+			break
+		}
+	}
+	return fieldName
 }
 
 func populatePDFData(body dto.NotaBody) (primitives.PDF, error) {
