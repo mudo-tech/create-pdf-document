@@ -42,6 +42,18 @@ func main() {
 			Phone:    "+6282186266734",
 			Divider:  "-------------------------------------------------------",
 		},
+		ServiceDetail: dto.NotaServiceDetail{
+			TotalPrice: 1000,
+			Services: []dto.NotaService{
+				{
+					Name:       "Baji",
+					Quantity:   10,
+					UnitAmount: "1",
+					Units:      "1",
+					Price:      1000,
+				},
+			},
+		},
 	})
 	if err != nil {
 		log.Println(err)

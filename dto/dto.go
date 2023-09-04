@@ -17,16 +17,16 @@ type NotaBranchDetail struct {
 }
 
 type NotaServiceDetail struct {
-	TotalPrice uint          `pdfField:"type:text;name:totalPrice"  json:"totalPrice"`
-	Services   []NotaService `json:"services"`
+	Services   []NotaService `pdfField:"type:table;tableRowHeight:6;dy:-18" json:"services"`
+	TotalPrice uint          `pdfField:"type:text;name:totalPrice;dy:55;dx:35"  json:"totalPrice"`
 }
 
 type NotaService struct {
-	Name       string `json:"name"`
-	Quantity   uint   `json:"quantity"`
-	UnitAmount string `json:"unitAmount"`
+	Name       string `pdfField:"colName:Name" json:"name"`
+	Quantity   uint   `pdfField:"colName:Quantity" json:"quantity"`
+	UnitAmount string `pdfField:"colName:Unit Amount" json:"unitAmount"`
 	Units      string `json:"units"`
-	Price      uint   `json:"price"`
+	Price      uint   `pdfField:"colName:Price" json:"price"`
 }
 
 type NotaPayment struct {
