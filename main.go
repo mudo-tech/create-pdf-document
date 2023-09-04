@@ -317,9 +317,66 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 		cp.config.CurrentX += int(rule.XPos)
 	case "table":
 		pType := field.Type
-		if pType.Kind() == reflect.Array {
-			
+		if pType.Kind() != reflect.Slice {
+			if val.Index(0).Kind() != reflect.Struct {
+				return fmt.Errorf("invalid type for field with type table")
+			}
+			return fmt.Errorf("invalid type for field with type table")
 		}
+
+		var colName = make([]string, 0)
+		var colNameMap = map[string]string{}
+		for i := 0; i < val.Index(0).NumField(); i++ {
+			fieldName := cp.getTableColName(val.Index(0).Type(), i)
+			if fieldName == "" {
+				continue
+			}
+			colNameMap[val.Index(0).Type().Field(i).Name] = fieldName
+			colName = append(colName, fieldName)
+		}
+
+		var rows = make([][]string, val.Len())
+		for i := 0; i < val.Len(); i++ {
+			rowVals := val.Index(i)
+			var row []string
+			for j := 0; j < rowVals.NumField(); j++ {
+				_, ok := colNameMap[rowVals.Type().Field(j).Name]
+				if ok {
+					row = append(row, fmt.Sprintf("%v", rowVals.Field(j).Interface()))
+				}
+			}
+			rows[i] = row
+		}
+
+		comp.Tables = append(comp.Tables, &primitives.Table{
+			Hide:   false,
+			Values: rows,
+			Header: &primitives.TableHeader{
+				Values:          colName,
+				BackgroundColor: "#D8D8D8",
+				ColAnchors:      []string{"Left", "Left", "Left", "Left"},
+			},
+			Font: &primitives.FormFont{
+				Name: cp.config.DefaultFont.Name,
+				Size: cp.config.DefaultFont.Size,
+			},
+			Anchor:     "tc",
+			Width:      float64(cp.config.PaperWidth - 3),
+			LineHeight: int(rule.TableRowHeight),
+			Rows:       len(rows),
+			Cols:       len(rows[0]),
+			ColWidths:  []int{25, 25, 25, 25},
+			Border: &primitives.Border{
+				Width: 1,
+				Color: "#FFFFFF",
+			},
+			ColAnchors: []string{"Left", "Left", "Left", "Left"},
+			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos))),
+			Dx:         float64(cp.config.CurrentX + int(rule.XPos)),
+		})
+		cp.config.CurrentY += int(rule.TableRowHeight+1)*len(rows) + int(rule.YPos)
+		cp.config.CurrentX += int(rule.XPos)
+
 	}
 
 	cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)].Content = comp
