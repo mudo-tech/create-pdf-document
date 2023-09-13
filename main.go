@@ -314,12 +314,26 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			return fmt.Errorf("tablePivot should be a struct")
 		}
 		var rows = make([][]string, 0)
+		var col []string
 		for i := 0; i < pType.NumField(); i++ {
 			fieldName := cp.getTableColName(pType, i)
 			if fieldName == "" {
 				continue
 			}
-			rows = append(rows, []string{" ", fieldName, ":", fmt.Sprintf("%v", val.Field(i).Interface())})
+
+			col = append(col, fieldName)
+			if rule.UsingColon {
+				col = append(col, ":")
+			}
+			col = append(col, fmt.Sprintf("%v", val.Field(i).Interface()))
+
+			rows = append(rows, col)
+			col = []string{}
+		}
+
+		var colAnchors = make([]string, len(rows[0]))
+		for i := range colAnchors {
+			colAnchors[i] = "Left"
 		}
 
 		comp.Tables = append(comp.Tables, &primitives.Table{
@@ -334,13 +348,13 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			LineHeight: int(rule.TableRowHeight),
 			Rows:       len(rows),
 			Cols:       len(rows[0]),
-			ColWidths:  []int{5, 30, 5, 60},
+			ColWidths:  rule.ColWidths,
 			Border: &primitives.Border{
 				Width: 1,
 				Color: "#FFFFFF",
 			},
-			ColAnchors: []string{"Center", "Left", "Center", "Left"},
-			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos))),
+			ColAnchors: colAnchors,
+			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos)) / 2),
 			Dx:         float64(cp.config.CurrentX + int(rule.XPos)),
 		})
 		cp.config.CurrentY += (int(rule.TableRowHeight) * (len(rows))) + int(rule.YPos)
@@ -383,7 +397,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Header: &primitives.TableHeader{
 				Values:          colName,
 				BackgroundColor: "#D8D8D8",
-				ColAnchors:      []string{"Left", "Left", "Left", "Left"},
+				ColAnchors:      []string{"Left", "Left", "Left"},
 			},
 			Font: &primitives.FormFont{
 				Name: cp.config.DefaultFont.Name,
@@ -394,14 +408,15 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			LineHeight: int(rule.TableRowHeight),
 			Rows:       len(rows),
 			Cols:       len(rows[0]),
-			ColWidths:  []int{25, 25, 25, 25},
+			ColWidths:  []int{25, 40, 35},
 			Border: &primitives.Border{
 				Width: 1,
 				Color: "#FFFFFF",
 			},
-			ColAnchors: []string{"Left", "Left", "Left", "Left"},
-			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos))),
-			Dx:         float64(cp.config.CurrentX + int(rule.XPos)),
+			ColAnchors: []string{"Left", "Left", "Left"},
+			//Dy:         -5,
+			Dy: float64(-(cp.config.CurrentY + int(rule.YPos)) / 2),
+			Dx: float64(cp.config.CurrentX + int(rule.XPos)),
 		})
 		cp.config.CurrentY += (int(rule.TableRowHeight+1) * (len(rows) + 1)) + int(rule.YPos)
 
