@@ -183,6 +183,8 @@ type KeyValRules struct {
 	TableRowHeight int64
 	ColAnchor      string
 	Anchor         string
+	UsingColon     bool
+	ColWidths      []int
 }
 
 func (rl *KeyValRules) extractFromMap(keyvals map[string]string) (err error) {
@@ -287,19 +289,14 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Value: text,
 			Font: &primitives.FormFont{
 				Name: cp.config.DefaultFont.Name,
-				Size: cp.config.DefaultFont.Size,
+				Size: int(rule.FontSize),
 			},
 			Anchor: "tc",
 			Dy:     float64(cp.config.CurrentY + int(rule.YPos)),
 			Dx:     float64(cp.config.CurrentX + int(rule.XPos)),
 		})
 
-		if rule.FontSize == 0 {
-			rule.FontSize = int64(cp.config.DefaultFont.Size)
-		}
-
 		cp.config.CurrentY += (int(rule.FontSize+1) * indent) + int(rule.YPos)
-		cp.config.CurrentX += int(rule.XPos)
 	case "image":
 		comp.ImageBoxes = append(comp.ImageBoxes, &primitives.ImageBox{
 			Src:    val.String(),
@@ -310,7 +307,6 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Dx:     float64(cp.config.CurrentX + int(rule.XPos)),
 		})
 		cp.config.CurrentY += int(rule.ImageHeight) + int(rule.YPos)
-		cp.config.CurrentX += int(rule.XPos)
 	case "tablePivot":
 		pType := field.Type
 		if pType.Kind() != reflect.Struct &&
@@ -331,7 +327,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Values: rows,
 			Font: &primitives.FormFont{
 				Name: cp.config.DefaultFont.Name,
-				Size: cp.config.DefaultFont.Size,
+				Size: int(rule.FontSize),
 			},
 			Anchor:     "tc",
 			Width:      float64(cp.config.PaperWidth - 3),
@@ -347,8 +343,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos))),
 			Dx:         float64(cp.config.CurrentX + int(rule.XPos)),
 		})
-		cp.config.CurrentY += int(rule.TableRowHeight+1)*len(rows) + int(rule.YPos)
-		cp.config.CurrentX += int(rule.XPos)
+		cp.config.CurrentY += (int(rule.TableRowHeight) * (len(rows))) + int(rule.YPos)
 	case "table":
 		pType := field.Type
 		if pType.Kind() != reflect.Slice {
@@ -408,8 +403,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos))),
 			Dx:         float64(cp.config.CurrentX + int(rule.XPos)),
 		})
-		cp.config.CurrentY += int(rule.TableRowHeight+1)*len(rows) + int(rule.YPos)
-		cp.config.CurrentX += int(rule.XPos)
+		cp.config.CurrentY += (int(rule.TableRowHeight+1) * (len(rows) + 1)) + int(rule.YPos)
 
 	}
 
