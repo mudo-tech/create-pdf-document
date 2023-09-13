@@ -266,9 +266,19 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 	}
 
 	pageLen := len(cp.component.Pages)
-	if cp.config.CurrentY > cp.config.PaperHeight {
+	if cp.config.CurrentY > cp.config.PaperHeight-30 {
 		pageLen += 1
+		cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)] =
+			&primitives.PDFPage{
+				Content: &primitives.Content{},
+			}
+		cp.config.CurrentY = 0
 	}
+
+	if rule.FontSize == 0 {
+		rule.FontSize = int64(cp.config.DefaultFont.Size)
+	}
+
 	comp := cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)].Content
 	switch rule.Type {
 	case "text":
