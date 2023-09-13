@@ -232,6 +232,26 @@ func (rl *KeyValRules) extractFromMap(keyvals map[string]string) (err error) {
 
 	}
 
+	if keyvals["usingColon"] != "" {
+		rl.UsingColon, err = strconv.ParseBool(keyvals["usingColon"])
+		if err != nil {
+			return fmt.Errorf("usingColon should be boolean")
+		}
+	}
+
+	if keyvals["colWidths"] != "" {
+		cs := strings.Split(keyvals["colWidths"], ",")
+		var cwd = make([]int, len(cs))
+		for i, c := range cs {
+			num, err := strconv.ParseInt(c, 10, 64)
+			if err != nil {
+				return fmt.Errorf("kesalahan format pada colWidths")
+			}
+			cwd[i] = int(num)
+		}
+		rl.ColWidths = cwd
+	}
+
 	rl.ColAnchor = keyvals["colAnchor"]
 	rl.Anchor = keyvals["anchor"]
 
