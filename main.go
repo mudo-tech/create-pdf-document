@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-
+	start := time.Now()
 	pdfcpu.LoadConfiguration()
 
 	err := pdfcpu.InstallFonts([]string{"./resources/CONSOLA.ttf"})
@@ -36,7 +36,9 @@ func main() {
 			PaidAt:          "28 Juli 2023 14:00 WIB",
 		},
 		CustomerName: "Ridho Muhammad",
-		Divider:      "-------------------------------------------------------",
+		Barcode:      "https://www.bdc.ca/globalassets/digizuite/40415-bdc-qr-code.jpg?v=498d76",
+		//Barcode:      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALEAAACxCAIAAAAES8uSAAAABmJLR0QA/wD/AP+gvaeTAAAEI0lEQVR4nO3d227dIBAF0J6q///L6VvkbIkGwgz2qdZ6jHw70RbGGMavj4+PX3Dx++4L4HFkgiQTJJkgyQRJJkgyQZIJkkyQZIIkEySZIMkESSZIMkGSCZJMkGSCJBMkmSDJBOnP/iFer9f+QcJ1NvnM8Ufbd89KH51rdM2rv2tVye/VTpBkgiQTpIL+xNXO/azq/rp6DVXn3enHPOH/9kk7QZIJkkyQivsTV6vjCjNGz/cz4wTdYwNXM+MTq/uuHufHtBMkmSDJBKmxP9Gh+/3C6D69OvZw8p1LOe0ESSZIMkF6g/7EzP14ph8w2n40zrFz/LemnSDJBEkmSI39iarn8pln/dX7+s77kevfO8Yebh/P0E6QZIIkE6Ti/sTJ5/WqPsFdfx/9lttpJ0gyQZIJUkF/ovt5unst6Mwci9W/r573UbQTJJkgyQSpsf7EzrP4aN/V+ZI7/YCTYwlV61DUn6CFTJBkgnSo/sTO+snV41SNYczMmZjpr+xcwy1jGNoJkkyQZIL06rtjdcwzmDnXqpN1LdWf4C3JBEkmSAX9iZ2x+o66kFX1rHbqTOzMwbyrdvgn7QRJJkgyQTo0H7Oq3sPq8We2v5rZd/Udx0yfoKMv8mPaCZJMkGSC1Dg+MbPNTr3L1WsbHad7nWf3WtNy2gmSTJBkglQ8f6KjpnX3vbbj3cfqvjO6j/9JO0GSCZJMkIrXi+4831fNedypcbnzvmPnemYYn+A2MkGSCVJjfcyTfYud+hM7cxq630fc8u0x7QRJJkgyQWpcL/rlNBvzDGa2H52r+9c9oVZ3Oe0ESSZIMkEqno858r/Wn+ioAdo9R/Vb2gmSTJBkgnRzfczVfavu/d19oNX/w+01rK60EySZIMkE6dB60dH2IzvvMqq+J9I9d7JqHML8CdrJBEkmSDf3J072P3b27V4vevs7jivtBEkmSDJBetD3yju+27nz3uEJ4xkzdUXNn6CdTJBkgnToe2BXT3jW735XsrPvsXkSI9oJkkyQZIJUXM+qat/uut2r19DxG6uux/gE7WSCJBOkQ/UndnTMT+yYr1C1Dvb2upnaCZJMkGSCdPP4xMjO2suqbbrXU+zU6GylnSDJBEkmSIfqT8zYmSM5uoadORPd70FW/1fH5mZqJ0gyQZIJUnF/4qqjRlNVbcoZHWMDVd8Sax230E6QZIIkE6TG+hNVNShH5xodZ2b7mWuYOf7Iydqd5bQTJJkgyQSpcXziCbrHMKrWboyYP8EjyARJJkiN/YmOOlcn11lUjbWMtrnyfVEeTSZIMkEq7k8ce4b+x7lm7usda0o7xjw66pd/SztBkgmSTJDeoP4Eh2knSDJBkgmSTJBkgiQTJJkgyQRJJkgyQZIJkkyQZIIkEySZIMkESSZIMkGSCZJMkGSCJBOkv6w975dWg7c6AAAAAElFTkSuQmCC",
+		Divider: "-------------------------------------------------------",
 		NotaBranchDetail: dto.NotaBranchDetail{
 			ImageUrl: "https://res.cloudinary.com/dukuh51km/image/upload/v1691834622/staging/mobxL-1691834622.png",
 			Name:     "Kassir Bersih",
@@ -59,8 +61,8 @@ func main() {
 			TotalPrice: 1000,
 			Services: []dto.NotaService{
 				{
-					Name:              "Baju",
-					QuantityFormatted: "1 * 1 Kg",
+					Name:              "Reguler Kiloan",
+					QuantityFormatted: "1 * 1.00 Kg",
 					Quantity:          10,
 					UnitAmount:        "",
 					Units:             "1",
@@ -77,7 +79,7 @@ func main() {
 					Price:             1000,
 				}, {
 					Name:              "Baju",
-					QuantityFormatted: "1 * 1 Kg",
+					QuantityFormatted: "1 * Pasang",
 					Quantity:          10,
 					UnitAmount:        "",
 					Units:             "1",
@@ -132,6 +134,8 @@ func main() {
 		log.Println(err)
 		return
 	}
+
+	log.Println(time.Since(start).Milliseconds())
 }
 
 type CreatePDF struct {
@@ -145,6 +149,10 @@ type ConfigPDF struct {
 	CurrentY    int
 	CurrentX    int
 	Padding     int
+	MaxY        int
+	MaxX        int
+	PageStack   map[string]bool
+	CurrentPage int
 	DefaultFont DefaultFont
 }
 
@@ -156,7 +164,12 @@ type DefaultFont struct {
 func NewCreatePDf() CreatePDF {
 	return CreatePDF{
 		config: &ConfigPDF{
-			PaperWidth:  125,
+			PaperWidth: 125,
+			MaxY:       180,
+			PageStack: map[string]bool{
+				"1": true,
+			},
+			CurrentPage: 1,
 			PaperHeight: 184,
 			CurrentY:    0,
 			CurrentX:    0,
@@ -177,6 +190,9 @@ func NewCreatePDf() CreatePDF {
 			TimestampFormat: time.Now().Format("Monday, 2.Jan 2006 15:04:05"),
 			Pages: map[string]*primitives.PDFPage{
 				"1": {
+					Content: &primitives.Content{},
+				},
+				"2": {
 					Content: &primitives.Content{},
 				},
 			},
@@ -310,25 +326,15 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 		return err
 	}
 
-	pageLen := len(cp.component.Pages)
-	if cp.config.CurrentY > cp.config.PaperHeight-30 {
-		pageLen += 1
-		cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)] =
-			&primitives.PDFPage{
-				Content: &primitives.Content{},
-			}
-		cp.config.CurrentY = 0
-	}
-
 	if rule.FontSize == 0 {
 		rule.FontSize = int64(cp.config.DefaultFont.Size)
 	}
 
-	comp := cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)].Content
+	comp := cp.component.Pages[strconv.FormatInt(int64(cp.config.CurrentPage), 10)].Content
 	switch rule.Type {
 	case "text":
 		text, indent := cp.config.ParseText(fmt.Sprintf("%v", val.Interface()))
-		comp.TextBoxes = append(comp.TextBoxes, &primitives.TextBox{
+		textBox := &primitives.TextBox{
 			Value: text,
 			Font: &primitives.FormFont{
 				Name: cp.config.DefaultFont.Name,
@@ -337,19 +343,51 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			Anchor: "tc",
 			Dy:     float64(cp.config.CurrentY + int(rule.YPos)),
 			Dx:     float64(cp.config.CurrentX + int(rule.XPos)),
-		})
-
+		}
 		cp.config.CurrentY += (int(rule.FontSize+1) * indent) + int(rule.YPos)
+		cy := cp.config.CurrentY
+		if cp.config.changingPage() {
+			overIndent := (cy - cp.config.MaxY) / int(rule.FontSize+1)
+			indent -= overIndent
+			txts := cp.config.CutStringOnNewLine(text, indent)
+			var nextTextBox primitives.TextBox
+			if len(txts) > 1 {
+				textBox.Value = txts[0]
+				cp.component.Pages[strconv.Itoa(cp.config.CurrentPage-1)].Content.TextBoxes = append(
+					cp.component.Pages[strconv.Itoa(cp.config.CurrentPage-1)].Content.TextBoxes,
+					textBox,
+				)
+				nextTextBox = *textBox
+				nextTextBox.Value = txts[1]
+			}
+
+			nextTextBox.Dy = float64(cp.config.CurrentY)
+			comp = &primitives.Content{
+				TextBoxes: []*primitives.TextBox{&nextTextBox},
+			}
+			cp.config.CurrentY += (int(rule.FontSize+1) * indent) + int(rule.YPos)
+			break
+		}
+		comp.TextBoxes = append(comp.TextBoxes, textBox)
 	case "image":
-		comp.ImageBoxes = append(comp.ImageBoxes, &primitives.ImageBox{
+		imageBox := &primitives.ImageBox{
 			Src:    val.String(),
 			Anchor: "tc",
 			Width:  float64(rule.ImageWidth),
 			Height: float64(rule.ImageHeight),
 			Dy:     float64(cp.config.CurrentY + int(rule.YPos)),
 			Dx:     float64(cp.config.CurrentX + int(rule.XPos)),
-		})
+		}
 		cp.config.CurrentY += int(rule.ImageHeight) + int(rule.YPos)
+		if cp.config.changingPage() {
+			imageBox.Dy = float64(cp.config.CurrentY)
+			comp = &primitives.Content{
+				ImageBoxes: []*primitives.ImageBox{imageBox},
+			}
+			cp.config.CurrentY += int(rule.ImageHeight) + int(rule.YPos)
+			break
+		}
+		comp.ImageBoxes = append(comp.ImageBoxes, imageBox)
 	case "tablePivot":
 		pType := field.Type
 		if pType.Kind() != reflect.Struct &&
@@ -379,7 +417,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			colAnchors[i] = "Left"
 		}
 
-		comp.Tables = append(comp.Tables, &primitives.Table{
+		tables := &primitives.Table{
 			Hide:   false,
 			Values: rows,
 			Font: &primitives.FormFont{
@@ -399,8 +437,17 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			ColAnchors: colAnchors,
 			Dy:         float64(-(cp.config.CurrentY + int(rule.YPos)) / 2),
 			Dx:         float64(cp.config.CurrentX + int(rule.XPos)),
-		})
+		}
 		cp.config.CurrentY += (int(rule.TableRowHeight) * (len(rows))) + int(rule.YPos)
+		if cp.config.changingPage() {
+			tables.Dy = float64(cp.config.CurrentY)
+			comp = &primitives.Content{
+				Tables: []*primitives.Table{tables},
+			}
+			cp.config.CurrentY += (int(rule.TableRowHeight) * (len(rows))) + int(rule.YPos)
+			break
+		}
+		comp.Tables = append(comp.Tables, tables)
 	case "table":
 		pType := field.Type
 		if pType.Kind() != reflect.Slice {
@@ -434,7 +481,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			rows[i] = row
 		}
 
-		comp.Tables = append(comp.Tables, &primitives.Table{
+		tables := &primitives.Table{
 			Hide:   false,
 			Values: rows,
 			Header: &primitives.TableHeader{
@@ -451,7 +498,7 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			LineHeight: int(rule.TableRowHeight),
 			Rows:       len(rows),
 			Cols:       len(rows[0]),
-			ColWidths:  []int{25, 40, 35},
+			ColWidths:  []int{30, 40, 30},
 			Border: &primitives.Border{
 				Width: 1,
 				Color: "#FFFFFF",
@@ -460,13 +507,31 @@ func (cp *CreatePDF) CreateComponent(keyVals map[string]string, field reflect.St
 			//Dy:         -5,
 			Dy: float64(-(cp.config.CurrentY + int(rule.YPos)) / 2),
 			Dx: float64(cp.config.CurrentX + int(rule.XPos)),
-		})
+		}
 		cp.config.CurrentY += (int(rule.TableRowHeight+1) * (len(rows) + 1)) + int(rule.YPos)
-
+		if cp.config.changingPage() {
+			tables.Dy = float64(cp.config.CurrentY)
+			comp = &primitives.Content{
+				Tables: []*primitives.Table{tables},
+			}
+			cp.config.CurrentY += (int(rule.TableRowHeight+1) * (len(rows) + 1)) + int(rule.YPos)
+			break
+		}
+		comp.Tables = append(comp.Tables, tables)
 	}
 
-	cp.component.Pages[strconv.FormatInt(int64(pageLen), 10)].Content = comp
+	cp.component.Pages[strconv.FormatInt(int64(cp.config.CurrentPage), 10)].Content = comp
 	return nil
+}
+
+func (cf *ConfigPDF) changingPage() bool {
+	if !cf.PageStack[strconv.Itoa(cf.CurrentPage+1)] && cf.CurrentY > cf.MaxY {
+		cf.CurrentPage += 1
+		cf.PageStack[strconv.Itoa(cf.CurrentPage)] = true
+		cf.CurrentY = 0
+		return true
+	}
+	return false
 }
 
 func (cp *CreatePDF) getTableColName(pType reflect.Type, i int) string {
@@ -492,6 +557,24 @@ func populatePDFData(body dto.NotaBody) (primitives.PDF, error) {
 		return primitives.PDF{}, err
 	}
 	return *tmp.component, nil
+}
+
+func (cf ConfigPDF) CutStringOnNewLine(tx string, count int) []string {
+	var (
+		step int
+		strs = make([]string, 0)
+	)
+	for i := range tx {
+		if string(tx[i]) == "\n" {
+			step += 1
+			if count == step {
+				strs = append(strs, tx[:i])
+				strs = append(strs, tx[i:])
+			}
+		}
+	}
+
+	return strs
 }
 
 func (cf ConfigPDF) ParseText(tx string) (string, int) {
