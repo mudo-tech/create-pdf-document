@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -135,7 +136,7 @@ func main() {
 		return
 	}
 
-	log.Println(time.Since(start).Milliseconds())
+	log.Println(time.Since(start).Seconds())
 }
 
 type CreatePDF struct {
@@ -201,33 +202,49 @@ func NewCreatePDf() CreatePDF {
 }
 
 func (cp *CreatePDF) ApplyStyling(pType reflect.Type, pVal reflect.Value) error {
+	var (
+		wg       = new(sync.WaitGroup)
+		errChan  = make(chan error)
+		errCount int
+	)
 	for i := 0; i < pType.NumField(); i++ {
-		tag := pType.Field(i).Tag.Get("pdfField")
-		if pType.Field(i).Type.Kind() == reflect.Struct &&
-			tag == "" {
-			err := cp.ApplyStyling(pType.Field(i).Type, pVal.Field(i))
-			if err != nil {
-				return err
+		errCount++
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			tag := pType.Field(i).Tag.Get("pdfField")
+			if pType.Field(i).Type.Kind() == reflect.Struct &&
+				tag == "" {
+				err := cp.ApplyStyling(pType.Field(i).Type, pVal.Field(i))
+				if err != nil {
+					errChan <- err
+				}
 			}
-			continue
-		}
-		var keyValMap = map[string]string{}
-		for _, s := range strings.Split(tag, ";") {
-			if len(s) < 1 {
-				continue
+			var keyValMap = map[string]string{}
+			for _, s := range strings.Split(tag, ";") {
+				if len(s) < 1 {
+					continue
+				}
+				keyVal := strings.Split(s, ":")
+				if len(keyVal) < 2 {
+					errChan <- fmt.Errorf("invalid on key val")
+				}
+				keyValMap[keyVal[0]] = keyVal[1]
 			}
-			keyVal := strings.Split(s, ":")
-			if len(keyVal) < 2 {
-				return fmt.Errorf("invalid on key val")
-			}
-			keyValMap[keyVal[0]] = keyVal[1]
-		}
-		err := cp.CreateComponent(keyValMap, pType.Field(i), pVal.Field(i))
+
+			err := cp.CreateComponent(keyValMap, pType.Field(i), pVal.Field(i))
+			errChan <- err
+		}(i)
+	}
+
+	for i := 0; i < errCount; i++ {
+		err := <-errChan
 		if err != nil {
 			return err
 		}
-
 	}
+
+	wg.Wait()
 
 	return nil
 }
